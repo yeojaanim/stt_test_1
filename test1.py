@@ -125,10 +125,10 @@ vectorstore = FAISS.from_documents(documents=splits, embedding=embedding_model)
 
 retriever = vectorstore.as_retriever()
 
-tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b-it", use_auth_token="***REMOVED***vUerficwQNAGaxGJRaPYRCPVxApDBOBruT")
+tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b-it", use_auth_token="HF_TOKEN")
 model = AutoModelForCausalLM.from_pretrained(
     "google/gemma-2-2b-it",
-    use_auth_token="***REMOVED***vUerficwQNAGaxGJRaPYRCPVxApDBOBruT",
+    use_auth_token="HF_TOKEN",
     device_map="auto",
 )
 
