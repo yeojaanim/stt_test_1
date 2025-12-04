@@ -27,9 +27,14 @@ def convert_mp3_to_wav(mp3_file_path, wav_file_path):
     audio.export(wav_file_path, format="wav")
 
 # 예시: 디렉토리 내의 모든 .mp3 파일을 .wav 파일로 변환
-path = kagglehub.dataset_download("wiradkp/mini-speech-diarization")
-directory_path = f"{path}/dataset/raw"
+#path = kagglehub.dataset_download("wiradkp/mini-speech-diarization")
+#directory_path = f"{path}/dataset/raw"
+#wav_directory_path = "./converted_wav"
+
+# 예시2: input 로컬 폴더에서 mp3 파일을 불러와서 변환
+directory_path = "/home/minho-song/stt_test_1/input"
 wav_directory_path = "./converted_wav"
+
 
 os.makedirs(wav_directory_path, exist_ok=True)
 
@@ -45,7 +50,7 @@ import speech_recognition as sr
 #import os
 import pandas as pd
 
-def speech_to_text_from_audio(audio_file_path, language="en-US", chunk_length=60000):
+def speech_to_text_from_audio(audio_file_path, language="ko-KR", chunk_length=60000):
     recognizer = sr.Recognizer()
     
     audio = AudioSegment.from_wav(audio_file_path)
@@ -69,7 +74,8 @@ def speech_to_text_from_audio(audio_file_path, language="en-US", chunk_length=60
     return " ".join(texts)
 
 # 경로 설정
-directory_path = "/home/minho-song/stt_test_1/converted_wav" # 파일경로설정 / 해당 파일안에 있는 모든 wav 파일에 대해 stt를 수행할 거임.
+# 파일경로설정 / 해당 파일안에 있는 모든 wav 파일에 대해 stt를 수행할 거임.
+directory_path = "/home/minho-song/stt_test_1/converted_wav"
 
 text = []
 # 디렉토리 내의 모든 .wav 파일에 대해 STT 수행
@@ -79,7 +85,7 @@ for filename in sorted(os.listdir(directory_path)):
         text.append(speech_to_text_from_audio(audio_file_path))
 
 #결과 확인용.
-#print(text)
+print(text)
 
 
 import bs4
@@ -108,13 +114,13 @@ text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=10
 splits = text_splitter.split_documents([doc])
 
 #확인용
-#len(splits)
-#print(splits)
+len(splits)
+print(splits)
 
 
 from transformers import RagTokenizer, RagRetriever, RagTokenForGeneration, pipeline
 from langchain.embeddings import HuggingFaceEmbeddings
-#from langchain_classic.vectorstores import FAISS
+from langchain_classic.vectorstores import FAISS
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch 
 
@@ -129,22 +135,21 @@ tokenizer = AutoTokenizer.from_pretrained("google/gemma-2-2b-it", use_auth_token
 model = AutoModelForCausalLM.from_pretrained(
     "google/gemma-2-2b-it",
     use_auth_token="HF_TOKEN",
-    device_map="auto",
-)
+    device_map="auto")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model.to(device) # <- 오류 시 주석 처리 후 .input_ids.to('cpu') 주석 해제
+#model.to(device) # <- 오류 시 주석 처리 후 .input_ids.to('cpu') 주석 해제
 
 def generate_answer(question):
-    related_docs = retriever._get_relevant_documents(question, run_manager=None)
+    related_docs = retriever.invoke(question)
     context = " ".join([doc.page_content for doc in related_docs])
     input_text = f"{context}\n\nQuestion: {question}\nAnswer:"
-    input_ids = tokenizer(input_text, return_tensors="pt")#.input_ids.to('cpu') # model.to(device) <- 오류 시 주석 해제.
+    input_ids = tokenizer(input_text, return_tensors="pt").input_ids.to('cpu') # model.to(device) <- 오류 시 주석 해제.
     generated_ids = model.generate(input_ids, max_length=1024, num_return_sequences=1)
     return tokenizer.decode(generated_ids[0], skip_special_tokens=True)
 
 # 질문을 입력받아 답변 생성
-question = "What is this document about?"
+question = "이 텍스트의 주요 내용은 무엇인가요?"
 answer = generate_answer(question)
 print(answer)
 
@@ -165,7 +170,7 @@ print(only_answer)
 from gtts import gTTS
 #import os
 
-def text_to_speech(text, language='en', output_file='output.mp3'):
+def text_to_speech(text, language='ko', output_file='output.mp3'):
     """
     텍스트를 음성으로 변환하여 mp3 파일로 저장합니다.
 
@@ -187,4 +192,4 @@ def text_to_speech(text, language='en', output_file='output.mp3'):
     # os.system(f"mpg321 {output_file}")  # Linux에서 작동
 
 # 예제 사용
-text_to_speech(only_answer, language='en', output_file='hello.mp3')
+text_to_speech(only_answer, language='ko', output_file='hello.mp3')
